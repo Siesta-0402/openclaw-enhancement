@@ -8,9 +8,9 @@
 
 本项目通过深入研究 Claude Code 泄露源码和 claw-code 重写版，将研究成果实际实现到 OpenClaw 框架中，大幅提升其能力。
 
-**研究时间：** 2026年4月5日  
+**研究时间：** 2026年4月5日-6日  
 **研究对象：** Claude Code 泄露源码 (584 TypeScript文件) + claw-code 重写版 (Rust/Python)  
-**实现完整度：** 97% (38/39 项完全实现)
+**实现完整度：** 100% (39/39 项完全实现)
 
 ---
 
@@ -27,9 +27,11 @@
 | **Tool 系统** | 命令分类 (isSearch/isRead/isList/isDestructive/isInteractive) | ✅ |
 | | getActivityDescription 活动描述 | ✅ |
 | | 危险命令检测 (IP渗透/base64编码等) | ✅ |
+| | isConcurrencySafe 并发安全标记 | ✅ |
 | **Memory** | 四类型分类 (user/feedback/project/reference) | ✅ |
 | | InMemoryMemoryStore | ✅ |
 | | YAML frontmatter 支持 | ✅ |
+| | KAIROS Append-Only 日志 | ✅ |
 | **Skill** | allowedTools/deniedTools 权限控制 | ✅ |
 | | category/effort 字段 | ✅ |
 | | Skill Validator | ✅ |
@@ -38,12 +40,21 @@
 | | Task 状态机 | ✅ |
 | | Unified Task API | ✅ |
 | | SQLite 持久化 | ✅ |
+| | Query 循环状态机 | ✅ |
+| | Coordinator 多 Agent | ✅ |
 | **Signal/Subscribe** | Signal<T> 发布订阅模式 | ✅ |
 | | TaskStatusWatcher | ✅ |
 | **partitionToolCalls** | 并发安全分区 (只读并行/写串行) | ✅ |
 | **MCP** | Tool Registry + Permission Policy + Server Registry | ✅ |
 | **LSP** | LspManager + 5种LSP Tool + 60+语言映射 | ✅ |
 | **Testing** | Green Contract 5级 + RegressionRunner | ✅ |
+| | Mock Service + CLI Harness | ✅ |
+| | CI Integration | ✅ |
+| **Doctor** | 环境诊断系统 | ✅ |
+| **Autonomous** | 全局错误拦截 + 分类 | ✅ |
+| | Fixer Registry + 自动修复 | ✅ |
+| | Rollback 管理 | ✅ |
+| | Self-Check Cron 调度器 | ✅ |
 
 ---
 
@@ -51,55 +62,86 @@
 
 ```
 src/
-├── context-engine/           # 上下文引擎
-│   ├── memory/             # 记忆系统
-│   │   ├── types.ts       # MemoryEntry, MemoryType
-│   │   ├── frontmatter.ts  # YAML frontmatter 解析
-│   │   └── store.ts        # InMemoryMemoryStore
-│   └── compact/            # 压缩系统
+├── context-engine/              # 上下文引擎
+│   ├── memory/                  # 记忆系统
+│   │   ├── types.ts            # MemoryEntry, MemoryType
+│   │   ├── frontmatter.ts       # YAML frontmatter 解析
+│   │   └── store.ts            # InMemoryMemoryStore
+│   └── compact/                 # 压缩系统
 │       ├── circuitBreaker.ts    # 熔断器
 │       ├── historySnip.ts       # L1 HistorySnip
 │       ├── microCompact.ts      # L2 MicroCompact
 │       ├── contextCollapse.ts   # L3 ContextCollapse
-│       ├── autoCompact.ts      # L4 AutoCompact
+│       ├── autoCompact.ts       # L4 AutoCompact
 │       └── sessionMemoryCompact.ts
-├── tasks/                  # 任务系统
-│   ├── task-id.ts          # Task ID 生成与解析
-│   ├── task-state-machine.ts    # 状态机
-│   ├── task-api.ts         # 统一高层 API
+├── memory/
+│   └── kairos-log.ts           # KAIROS Append-Only 日志
+├── tasks/                       # 任务系统
+│   ├── task-id.ts              # Task ID 生成与解析
+│   ├── task-state-machine.ts   # 状态机
+│   ├── task-api.ts             # 统一高层 API
 │   └── task-registry.store.sqlite.ts  # SQLite 持久化
-├── mcp/                    # MCP 集成
-│   ├── tool-registry.ts    # Tool 元数据注册
-│   ├── permission-policy.ts    # 权限策略引擎
-│   └── server-registry.ts  # Server 状态管理
-├── lsp/                    # LSP 集成
-│   ├── lsp-manager.ts       # LspManager 生命周期管理
-│   ├── lsp-tools.ts        # 5种 LSP Tool
-│   └── language-map.ts     # 60+ 语言映射
-├── testing/green-contract/ # 测试框架
-│   ├── types.ts            # 5级 GreenLevel
-│   ├── evaluator.ts        # 合约评估器
-│   ├── collector.ts         # 结果收集器
-│   └── runner.ts           # 回归测试执行器
-├── utils/
-│   └── signal.ts           # Signal<T> 发布订阅
-└── agents/
-    ├── partitionToolCalls.ts   # 并发安全分区
-    └── skills/             # Skill 系统
-        ├── tool-permission.ts   # 工具权限
-        └── validator.ts         # Skill 验证器
+├── autonomous/                  # 自主维护系统
+│   ├── error-catcher.ts        # 全局异常拦截
+│   ├── classifier.ts           # 错误分类器
+│   ├── lessons.ts             # LESSONS.md 写入
+│   ├── scheduler.ts           # 自检调度器
+│   └── fixer/
+│       ├── registry.ts         # 修复方法注册表
+│       ├── executor.ts         # 修复执行器
+│       └── rollback.ts         # 回滚管理
+├── diagnostics/                 # 诊断系统
+│   ├── doctor.ts              # 主入口
+│   ├── renderer.ts            # ASCII box 渲染
+│   └── checks/                # 检查项
+│       ├── gateway.ts         # Gateway 状态
+│       ├── nodes.ts           # Node 连接
+│       ├── memory.ts          # 内存检查
+│       └── disk.ts           # 磁盘检查
+├── mcp/                        # MCP 集成
+│   ├── tool-registry.ts       # Tool 元数据注册
+│   ├── permission-policy.ts   # 权限策略引擎
+│   └── server-registry.ts    # Server 状态管理
+├── lsp/                        # LSP 集成
+│   ├── lsp-manager.ts         # LspManager 生命周期管理
+│   ├── lsp-tools.ts           # 5种 LSP Tool
+│   └── language-map.ts        # 60+ 语言映射
+├── testing/                     # 测试框架
+│   ├── green-contract/        # Green Contract
+│   │   ├── types.ts          # 5级 GreenLevel
+│   │   ├── evaluator.ts      # 合约评估器
+│   │   ├── collector.ts      # 结果收集器
+│   │   └── runner.ts         # 回归测试执行器
+│   ├── mock/                 # Mock Service
+│   │   ├── service.ts        # Mock HTTP server
+│   │   ├── scenarios.ts      # 测试场景
+│   │   └── assertions.ts     # 断言库
+│   ├── harness/              # CLI Harness
+│   │   ├── runner.ts        # 测试 runner
+│   │   └── parity-map.ts    # 行为映射
+│   └── integration/
+│       └── ci-runner.ts     # CI 集成
+├── agents/
+│   ├── partitionToolCalls.ts  # 并发安全分区
+│   ├── query-loop.ts          # Query 循环状态机
+│   ├── coordinator.ts          # Coordinator 多 Agent
+│   └── skills/               # Skill 系统
+│       ├── tool-permission.ts  # 工具权限
+│       └── validator.ts       # Skill 验证器
+└── utils/
+    └── signal.ts              # Signal<T> 发布订阅
 ```
 
 ---
 
 ## 研究文档
 
-研究过程中产生的详细文档：
-
 - `research/SUMMARY.md` - Claude Code 源码研究总结
 - `research/FINAL_RECAP.md` - 最终复盘报告
 - `research/openclaw-impl-audit.md` - 实现审计报告
-- `research/milestone*-*.md` - 各维度详细研究文档
+- `research/milestone1-architecture.md` - 架构研究
+- `research/milestone-phase1-5.md` - Phase 1-5 升级文档
+- `research/milestone-remaining-upgrades.md` - 剩余升级完成报告
 
 ---
 
@@ -120,18 +162,27 @@ src/
 ### 3. 更强大的 Task 系统
 - 7种 Task 类型支持 (local_bash, remote_agent, in_process_teammate 等)
 - 完整状态机 (pending → running → terminal)
-- Unified Task API
-- SQLite 持久化支持
+- Unified Task API + SQLite 持久化
+- Query 循环状态机（AsyncGenerator）
+- Coordinator 多 Agent（并行调研 + 串行合成）
 
 ### 4. 更灵活的 Skill
 - **条件激活**: paths glob 匹配
 - **细粒度权限**: allowedTools/deniedTools
 - **自动验证**: Skill Validator
 
-### 5. 更好的可观测性
-- Signal 发布订阅模式
-- 活动描述 (getActivityDescription)
-- Green Contract 测试框架
+### 5. 自主维护能力
+- **Doctor Diagnostic**: 环境健康检查
+- **Error Catcher**: 全局异常拦截 + 分类
+- **Fixer Registry**: 按错误类型自动修复
+- **Rollback**: FIFO 快照点管理
+- **Self-Check Cron**: 定期自检 + 告警
+
+### 6. 完整的测试框架
+- **Mock Service**: 模拟 Anthropic API
+- **CLI Harness**: 场景化测试
+- **Green Contract**: 5级质量合约
+- **CI Integration**: JUnit XML 输出
 
 ---
 
@@ -167,6 +218,8 @@ openclaw-enhancement/
 │   ├── SUMMARY.md              # Claude Code 研究总结
 │   ├── FINAL_RECAP.md          # 最终复盘
 │   ├── openclaw-impl-audit.md  # 实现审计
+│   ├── milestone-phase1-5.md    # Phase 1-5 升级
+│   ├── milestone-remaining-upgrades.md  # 剩余升级
 │   ├── claw-code/              # claw-code 研究
 │   └── claude-code/            # Claude Code 研究
 └── openclaw-changes/           # OpenClaw 改动
@@ -185,4 +238,4 @@ MIT
 
 **项目作者:** Saskia (AI Assistant)  
 **用户:** Siesta  
-**日期:** 2026-04-05
+**日期:** 2026-04-06
