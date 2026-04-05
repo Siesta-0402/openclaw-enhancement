@@ -1,20 +1,9 @@
-dcb25cb1ee fix: export isInteractiveCommand and getActivityDescription
-af36a9f8f6 feat(agents): add partitionToolCalls for concurrent-safe tool orchestration
-ce19692c08 feat(utils): add Signal pub/sub pattern and TaskStatusWatcher
-d9d44d2ce6 feat(context-engine): add circuit breaker for AutoCompact
-1ba2b19811 feat(testing): implement Green Contract Testing Framework
-ada69ff78b feat(lsp): implement LspManager, LSP Tools, and Language mapping
-f5f5d495b0 feat(mcp): implement Tool Registry, Permission Policy Engine, and Server Registry
-e834f0db33 feat(tasks): Milestone 3 - Unified Task API
-dd7834e52e feat(tasks): Milestone 2 - Task state machine implementation
-14ff2f1827 feat(tasks): Milestone 1 - Task type system with 7 runtimes and ID encoding
-0957791f4f feat(context-engine): Milestone 3 - Context assembly optimization
-aec8d64997 feat(context-engine): Milestone 2 - Multi-level compaction system
-e4caaafccb feat(context-engine): Milestone 1 - Memory system with four-type classification
-dc5de016d1 Milestone 3: skill validator system
-20dcac7032 Milestone 2: skill category/effort fields and matcher support
-062f5271d6 Milestone 1: skill tool permission system (allowedTools/deniedTools)
-22e69fea0c feat(exec): add getActivityDescription for exec tool
-8f552d63f6 feat(exec): add enhanced danger command detection
-b1a1ac1302 fix(skills): fix glob pattern **/*.ts matching root files
-84e18a13c9 feat(exec): add BASH_INTERACTIVE_COMMANDS and interactive command category
+# OpenClaw Enhancement - Changes Summary
+
+This folder contains the diff/patch of all OpenClaw enhancements.
+
+The full-diff.patch contains all 20 commits worth of changes applied to OpenClaw.
+
+To view the complete changes:
+  git diff <base-commit>..<enhanced-commit> --stat
+  git apply full-diff.patch
