@@ -1,0 +1,125 @@
+--- sed-validation.ts	2026-04-06 16:05:02.869446935 +0800
++++ sed-validation.integrated.ts	2026-04-06 16:05:11.917343737 +0800
+@@ -17,7 +17,7 @@
+   BashVerificationResult,
+   CheckDetail,
+   BASH_SECURITY_CHECK_IDS,
+-} from './bash-verification';
++} from './bash-verification.js';
+ 
+ // ============================================================================
+ // Sed-Specific Types
+@@ -473,9 +473,7 @@
+ 
+     if (result.behavior === 'ask') {
+       warnings.push(result.message || `Security check '${name}' triggered`);
+-      if (behavior !== 'deny') {
+-        behavior = 'ask';
+-      }
++      behavior = 'ask';
+     } else if (result.behavior === 'deny') {
+       warnings.push(result.message || `Security check '${name}' denied`);
+       behavior = 'deny';
+--- binary-content-detection.ts	2026-04-06 16:05:02.873446889 +0800
++++ binary-content-detection.integrated.ts	2026-04-06 16:05:11.921343692 +0800
+@@ -12,7 +12,7 @@
+  * - Integration with read tool
+  */
+ 
+-import { BashVerificationBehavior, PermissionResult, ValidationContext } from './bash-verification';
++import { BashVerificationBehavior, PermissionResult, ValidationContext } from './bash-verification.js';
+ 
+ // ============================================================================
+ // Binary Detection Types
+--- git-stale-branch-detection.ts	2026-04-06 16:05:02.889446707 +0800
++++ git-stale-branch-detection.integrated.ts	2026-04-06 16:05:11.925343646 +0800
+@@ -12,7 +12,7 @@
+  * - Suggested cleanup actions
+  */
+ 
+-import { BashVerificationBehavior, PermissionResult, ValidationContext } from './bash-verification';
++import { BashVerificationBehavior, PermissionResult, ValidationContext } from './bash-verification.js';
+ 
+ // ============================================================================
+ // Git Stale Branch Types
+--- session-lifecycle-hooks.ts	2026-04-06 16:05:02.885446753 +0800
++++ session-lifecycle-hooks.integrated.ts	2026-04-06 16:05:11.925343646 +0800
+@@ -13,7 +13,7 @@
+  * - Building session analytics
+  */
+ 
+-import { BashVerificationBehavior, PermissionResult, ValidationContext } from './bash-verification';
++import { BashVerificationBehavior, PermissionResult, ValidationContext } from '../agents/bash-verification.js';
+ 
+ // ============================================================================
+ // Session Lifecycle Types
+--- instinct-system.ts	2026-04-06 16:05:02.877446844 +0800
++++ instinct-system.integrated.ts	2026-04-06 16:05:11.929343601 +0800
+@@ -16,7 +16,7 @@
+  * automatically based on context signals.
+  */
+ 
+-import { BashVerificationBehavior, PermissionResult, ValidationContext } from './bash-verification';
++import { BashVerificationBehavior, PermissionResult, ValidationContext } from '../../agents/bash-verification.js';
+ 
+ // ============================================================================
+ // Instinct Types
+@@ -682,6 +682,8 @@
+     
+     try {
+       const result = instinct.trigger(context);
++      // Skip async triggers for immediate checks
++      if (result instanceof Promise) continue;
+       if (result.action && result.priority >= 80) {
+         results.push(result);
+       }
+--- git-history-skill-creator.ts	2026-04-06 16:05:02.893446661 +0800
++++ git-history-skill-creator.integrated.ts	2026-04-06 16:05:11.933343555 +0800
+@@ -13,7 +13,7 @@
+  * - Identify skill candidates from commit messages
+  */
+ 
+-import { BashVerificationBehavior, PermissionResult, ValidationContext } from './bash-verification';
++import { BashVerificationBehavior, PermissionResult, ValidationContext } from '../agents/bash-verification.js';
+ 
+ // ============================================================================
+ // Skill Creation Types
+@@ -352,6 +352,7 @@
+   
+   const patterns = Array.from(patternOccurrences.entries()).map(([key, data]) => ({
+     name: data.name,
++    category: data.category,
+     description: `${data.name} workflow (${data.category})`,
+     occurrences: data.commits.size,
+     commits: Array.from(data.commits),
+@@ -389,7 +390,7 @@
+  */
+ function generateSkillCandidates(
+   commits: GitCommit[],
+-  patterns: { name: string; description: string; occurrences: number; commits: string[] }[]
++  patterns: { name: string; category: string; description: string; occurrences: number; commits: string[] }[]
+ ): SkillCandidate[] {
+   const candidates: SkillCandidate[] = [];
+   const seenCategories = new Set<string>();
+--- bash-verification.ts	2026-04-06 16:05:02.897446616 +0800
++++ bash-verification.integrated.ts	2026-04-06 16:05:11.937343509 +0800
+@@ -548,9 +548,7 @@
+ 
+     if (result.behavior === 'ask') {
+       warnings.push(result.message || `Security check '${name}' triggered`);
+-      if (behavior !== 'deny') {
+-        behavior = 'ask';
+-      }
++      behavior = 'ask';
+     } else if (result.behavior === 'deny') {
+       behavior = 'deny';
+       break;
+@@ -615,7 +613,7 @@
+   private lines: string[] = [];
+   private totalBytes = 0;
+   private lastUpdateTime = Date.now();
+-  private readonly options: Required<OutputControlOptions>;
++  private readonly options: OutputControlOptions;
+   private truncated = false;
+ 
+   constructor(options: OutputControlOptions = {}) {
