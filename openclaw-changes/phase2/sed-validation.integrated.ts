@@ -272,7 +272,7 @@ function validateRegexInjection(sed: SedCommand): PermissionResult {
 
   const script = sed.script;
 
-  // Check for command substitution in regex
+  // Check for command substitution in regex: $(...) or ${...}
   if (/\$[({]/.test(script)) {
     return {
       behavior: 'deny',
@@ -281,11 +281,24 @@ function validateRegexInjection(sed: SedCommand): PermissionResult {
     };
   }
 
-  // Check for dangerous regex patterns
-  const dangerousPatterns = [
-    { pattern: /\\\(.*\\|/g, message: 'Nested alternation in regex' },
-    { pattern: /\{\d+,\d+\}/g, message: 'Unbounded repetition quantifier' },
-    { pattern: /\(\*\+\?\}\+/g, message: 'Nested quantifiers can cause regex DoS' },
+  // Check for 'e' flag in s/// command - executes replacement as shell command
+  // The 'e' flag is dangerous: s/pattern/cmd &/e
+  if (script.endsWith('/e"') || script.endsWith("/e'") || script.endsWith('/e ')) {
+    return {
+      behavior: 'deny',
+      message: 'sed substitution with /e flag executes replacement as shell command',
+      decisionReason: { type: 'safetyCheck', reason: 'Sed e-flag command execution' },
+    };
+  }
+
+  // Check for dangerous regex patterns in sed script
+  const dangerousPatterns: { pattern: RegExp; message: string }[] = [
+    // Detect alternation: (a|b) inside escaped parens \\(...\\)
+    { pattern: /\\([^)]*[|][^)]*\\)/g, message: 'Alternation in sed regex may be unsafe' },
+    // Detect unbounded quantifier {1,EXP} where EXP is large
+    { pattern: /\\{\d+,(\d+|\\})/g, message: 'Unbounded repetition quantifier' },
+    // Detect backreference \\1 \\2 etc - unsupported in basic sed
+    { pattern: /\\[1-9]/g, message: 'Backreference in regex is unsupported in sed' },
   ];
 
   for (const { pattern, message } of dangerousPatterns) {
